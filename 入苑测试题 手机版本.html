@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>冬旅人·入苑测试</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- 引入 Babel 用于解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* 自定义动画样式 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        /* 移动端优化样式 */
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent; /* 去除点击高亮 */
+            -webkit-touch-callout: none; /* 禁止长按菜单 */
+            user-select: none; /* 禁止选中文本 */
+        }
+        
+        /* 允许结果页的文本被选中复制 */
+        .allow-select {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        /* 修复移动端 100vh 问题 */
+        .min-h-screen-mobile {
+            min-height: 100vh; /* 降级兼容 */
+            min-height: 100dvh; /* 现代浏览器动态高度 */
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 图标组件 (替换 lucide-react 以便在 HTML 中直接运行) ---
+        const IconWrapper = ({ children, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        const Sparkles = ({ className }) => (
+            <IconWrapper className={className}>
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                <path d="M5 3v4"/>
+                <path d="M9 3v4"/>
+                <path d="M5 7h4"/>
+            </IconWrapper>
+        );
+
+        const Wind = ({ className }) => (
+            <IconWrapper className={className}>
+                <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/>
+                <path d="M9.6 4.6A2 2 0 1 1 11 8H2"/>
+                <path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
+            </IconWrapper>
+        );
+
+        const ChevronRight = ({ className }) => (
+            <IconWrapper className={className}>
+                <path d="m9 18 6-6-6-6"/>
+            </IconWrapper>
+        );
+
+        const RefreshCw = ({ className }) => (
+            <IconWrapper className={className}>
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M8 16H3v5"/>
+            </IconWrapper>
+        );
+
+        const Info = ({ className }) => (
+            <IconWrapper className={className}>
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+            </IconWrapper>
+        );
+
+        // --- 数据配置 ---
+        const questions = [
+            {
+                id: 1,
+                question: "方舟上的生活是恒温的，没有风暴，也没有饥饿。但你的身体却在枯萎... 在这个令人窒息的午后，你最怀念哪种感觉？",
+                options: [
+                { text: "我最怀念的，是在极寒中与他者紧密站立、相互支持的感觉。", type: "penguin" },
+                { text: "躺在一望无垠的草地上，享受着阳光、微风，一边吃青草一边吃胡萝卜的感觉。", type: "rabbit" },
+                { text: "我最怀念旷野的风卷来湿润泥土与远方水源的气息，还有风中同伴的讯息。", type: "elephant" },
+                { text: "在天上自由翱翔的感觉，在草原整了点薯条，去天上伸伸懒腰。", type: "eagle" },
+                ]
+            },
+            {
+                id: 2,
+                question: "在那只鹅的摊位前，屏幕播放着《荒野》... 盯着屏幕中那个“不可能存在”的世界，你脑海中冒出的第一个念头是：",
+                options: [
+                { text: "逃离这艘安稳的方舟，即使真实的世界里没有恒温，我仍然愿意在痛苦中经历爱。", type: "penguin" },
+                { text: "倘若我能触及这些色彩......无论真假我都想要这样活一次。", type: "rabbit" },
+                { text: "无论是在方舟还是草原，我都会大口呼吸。", type: "elephant" },
+                { text: "那正是我来的地方，可我们现在将驶向哪里呢？", type: "eagle" },
+                ]
+            },
+            {
+                id: 3,
+                question: "怀疑像潮湿的苔藓在蔓延。你开始悄悄收集一些“违禁品”（羽毛、泥土味的凉风）。你会把这些收集到的“违禁品”藏在什么地方？",
+                options: [
+                { text: "不动声色地收集，但是并不害怕被发现，而是坦然的放在身边。", type: "penguin" },
+                { text: "不做什么，就让ta们一如既往地“来访”，期待与ta们的再次相遇。", type: "rabbit" },
+                { text: "藏在身边，只有自己保管才感觉到安全，如果有危险还可以随时转移，和同伴一起保护这些“信号”。", type: "elephant" },
+                { text: "藏在桅杆的最高处，谁都别想拿走。", type: "eagle" },
+                ]
+            },
+            {
+                id: 4,
+                question: "方舟撞上了某种未知的障碍，灯光熄灭。在绝对的混乱中，你推开门前最后一次回头，看到大家惊恐又期待的眼神，你决定：",
+                options: [
+                { text: "缓缓地爬上身边的桌子，用身体和嗓音配合，握紧彼此的手，在共同编织的频率中走出黑暗。", type: "penguin" },
+                { text: "先抱抱大家~", type: "rabbit" },
+                { text: "作为先行者，在系统崩塌时依然选择相信可能，并用行动为恐惧的世界点亮第一盏灯。", type: "elephant" },
+                { text: "面对伙伴们先鞠一躬，然后祝他们早安，午安，晚安。", type: "eagle" },
+                ]
+            },
+            {
+                id: 5,
+                question: "跨出方舟的一瞬，寒冷、干燥、甚至是刺鼻的青草气味扑面而来。面对这片充满危险但也充满可能的荒原，你下意识做出的第一个动作是：",
+                options: [
+                { text: "慢慢地拨开眼前的迷雾，一步一步向未知走去。", type: "penguin" },
+                { text: "先顺顺惊恐未定的炸毛，运用全身的感官去探索和理解这片土地。", type: "rabbit" },
+                { text: "放缓节奏感受周围的细微变化，主动站在前方为伙伴照亮第一步路。", type: "elephant" },
+                { text: "大声朗诵“生活就像海洋只有意志坚强的人才能到达彼岸”，然后被狂风吹得东倒西歪。", type: "eagle" },
+                ]
+            },
+            {
+                id: 6,
+                question: "在寻找“家园”的路上，如果你必须在这支探险队中承担一项“不可替代”的职责，你希望那是：",
+                options: [
+                { text: "走在队伍中间，留心观察身边的环境，也注意关照团队的整体节奏。", type: "penguin" },
+                { text: "倾听小动物们的恐惧，努力用热情与爱驱散集体的阴霾。", type: "rabbit" },
+                { text: "领导者，凭借自身强大的力量，带领大家探寻到一些不一样的惊喜。", type: "elephant" },
+                { text: "排头兵，凭借飞天技能为其他小伙伴们探路。", type: "eagle" },
+                ]
+            },
+            {
+                id: 7,
+                question: "在荒野深处发现了一座古老的祭坛。当你伸手触摸其中一个图腾时，你情不自禁地喊出那句咒语：",
+                options: [
+                { text: "Protego Totalum! (统统加护🪄) 守护所有同行者前行。", type: "penguin" },
+                { text: "米西米西！", type: "rabbit" },
+                { text: "我体内的火车从不错轨，所以允许大雪、风暴、泥石流和荒谬。", type: "elephant" },
+                { text: "行到水穷处，坐看云起时，问苍茫大地，谁主沉浮？", type: "eagle" },
+                ]
+            },
+            {
+                id: 8,
+                question: "咒语响起，再次睁眼时，鹅朝你微笑：“欢迎，这就是你最想去的地方！”这里是：",
+                options: [
+                { text: "小伙伴们围坐在火堆旁，欢歌笑语，充满“爱”的氛围，没有恐惧与算计。", type: "penguin" },
+                { text: "一望无际的草原上，这里有牛群，鲜花，风，泥土，还有熟悉的自然。", type: "rabbit" },
+                { text: "每只动物都可以喊上大家一起旅行、喝水、跳舞，在广阔空间里发挥想象。", type: "elephant" },
+                { text: "敕勒川，阴山下，天似穹庐，笼盖四野。", type: "eagle" },
+                ]
+            }
+        ];
+
+        const animalInfo = {
+            penguin: {
+                name: "企鹅苑",
+                icon: "🐧",
+                color: "from-blue-500 to-indigo-600",
+                desc: "勇敢、善良、真诚、团结",
+            },
+            rabbit: {
+                name: "兔苑",
+                icon: "🐰",
+                color: "from-pink-400 to-rose-500",
+                desc: "机智、敏感、敏锐、勇敢、慢热、善良、边界感强、冒失、爱喝水、（爱吃菜）（爱吃胡萝卜🥕）、急躁、共情、有反差（敏感胆小但有好奇心努力探索，一开始会有一点封闭但是信任之后会能打开自己）、向「我们」敞开的自我",
+            },
+            elephant: {
+                name: "象苑",
+                icon: "🐘",
+                color: "from-emerald-500 to-teal-700",
+                desc: "温和与接纳、创造与想象、领导力与号召力",
+            },
+            eagle: {
+                name: "鹰苑",
+                icon: "🦅",
+                color: "from-amber-500 to-orange-600",
+                desc: "勇敢、独立、坚定地选择自己、探索和好奇心、保持敏锐、向上、勇猛精进",
+            }
+        };
+
+        function WinterSortingQuiz() {
+            const [step, setStep] = useState('intro');
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [scores, setScores] = useState({ penguin: 0, rabbit: 0, elephant: 0, eagle: 0 });
+            const [shuffledOptions, setShuffledOptions] = useState([]);
+
+            const shuffleArray = (array) => {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            };
+
+            useEffect(() => {
+                if (step === 'quiz') {
+                    setShuffledOptions(shuffleArray(questions[currentQuestion].options));
+                }
+            }, [step, currentQuestion]);
+
+            const handleStart = () => {
+                setStep('quiz');
+            };
+
+            const handleAnswer = (type) => {
+                const newScores = { ...scores, [type]: scores[type] + 1 };
+                setScores(newScores);
+
+                if (currentQuestion < questions.length - 1) {
+                    setTimeout(() => {
+                        setCurrentQuestion(currentQuestion + 1);
+                    }, 250);
+                } else {
+                    setStep('calculating');
+                    setTimeout(() => {
+                        setStep('result');
+                    }, 2000);
+                }
+            };
+
+            const restartQuiz = () => {
+                setScores({ penguin: 0, rabbit: 0, elephant: 0, eagle: 0 });
+                setCurrentQuestion(0);
+                setStep('intro');
+            };
+
+            // 1. 开场页
+            if (step === 'intro') {
+                return (
+                    <div className="min-h-screen-mobile bg-slate-900 text-white font-sans selection:bg-blue-500 overflow-hidden relative">
+                        <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766aa6f694e?q=80&w=2540&auto=format&fit=crop')] bg-cover bg-center"></div>
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-slate-900/50 via-slate-900/80 to-slate-900 z-0"></div>
+
+                        <div className="relative z-10 container mx-auto px-4 h-full flex flex-col items-center justify-center text-center max-w-2xl py-12">
+                        
+                        <h1 className="text-3xl md:text-5xl font-bold mb-6 tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-purple-100 drop-shadow-lg">
+                            冬旅人·入苑测试
+                        </h1>
+                        
+                        <div className="space-y-3 text-slate-300 leading-relaxed text-sm md:text-base mb-10 px-4 bg-slate-800/40 p-5 rounded-2xl backdrop-blur-sm border border-slate-700/50">
+                            <p>很久很久以前，大洪水来袭，动物们登上了诺亚方舟。</p>
+                            <p>但鹰变成了走地鸡，企鹅挤在冰柜，兔子吃着陈年干草，象在狭小的空间踱步。</p>
+                            <p>在那只鹅的摊位前，关于“新世界”的传言四起。</p>
+                            <p><strong>如果大门打开，你的灵魂会带你走向哪个苑？</strong></p>
+                        </div>
+
+                        <button 
+                            onClick={handleStart}
+                            className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full font-bold text-lg tracking-wider shadow-lg hover:shadow-blue-500/50 transition-all duration-300 transform active:scale-95 flex items-center gap-2 cursor-pointer touch-manipulation"
+                        >
+                            <Sparkles className="w-5 h-5 animate-pulse" />
+                            开始测试
+                            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 2. 答题页
+            if (step === 'quiz') {
+                const progress = ((currentQuestion + 1) / questions.length) * 100;
+                const q = questions[currentQuestion];
+
+                return (
+                    <div className="min-h-screen-mobile bg-slate-50 text-slate-800 flex flex-col relative overflow-hidden">
+                        <div className="w-full h-2 bg-slate-200">
+                        <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out"
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                        </div>
+
+                        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-50 -z-10"></div>
+                        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-50 -z-10"></div>
+
+                        <div className="flex-1 container mx-auto px-4 flex flex-col justify-center items-center max-w-3xl py-6 md:py-10">
+                        <div className="mb-4 md:mb-6 text-slate-400 font-serif italic tracking-widest text-sm md:text-base">
+                            QUESTION {currentQuestion + 1} / {questions.length}
+                        </div>
+
+                        <div className="w-full bg-white rounded-3xl shadow-xl p-6 md:p-12 mb-6 md:mb-8 relative border border-slate-100 animate-fade-in">
+                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white p-3 rounded-full shadow-lg">
+                                <Wind className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-lg md:text-2xl font-medium leading-relaxed text-center text-slate-700 pt-2">
+                            {q.question}
+                            </h2>
+                        </div>
+
+                        <div className="w-full grid gap-3 md:gap-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
+                            {shuffledOptions.map((option, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => handleAnswer(option.type)}
+                                className="group relative w-full text-left p-5 md:p-6 bg-white/80 hover:bg-blue-50 rounded-xl border border-slate-200 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] cursor-pointer touch-manipulation"
+                            >
+                                <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-slate-300 group-hover:border-blue-500 mt-1 flex items-center justify-center">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                </div>
+                                <span className="text-slate-600 group-hover:text-slate-900 text-sm md:text-lg leading-relaxed">
+                                    {option.text}
+                                </span>
+                                </div>
+                            </button>
+                            ))}
+                        </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 3. 计算中
+            if (step === 'calculating') {
+                return (
+                    <div className="min-h-screen-mobile bg-slate-900 flex flex-col items-center justify-center text-white">
+                        <div className="relative w-24 h-24 mb-8">
+                        <div className="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-t-blue-500 border-r-purple-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                        <Sparkles className="absolute inset-0 m-auto text-blue-300 animate-pulse" />
+                        </div>
+                        <h2 className="text-2xl font-light tracking-widest animate-pulse">正在聆听风的声音...</h2>
+                        <p className="text-slate-400 mt-2 text-sm">正在分析你的灵魂成分</p>
+                    </div>
+                );
+            }
+
+            // 4. 结果页
+            if (step === 'result') {
+                const total = 8;
+                const results = Object.keys(scores).map(key => ({
+                    key,
+                    percent: Math.round((scores[key] / total) * 100),
+                    ...animalInfo[key]
+                })).sort((a, b) => b.percent - a.percent);
+
+                const mainResult = results[0];
+
+                return (
+                    <div className="min-h-screen-mobile bg-slate-50 py-8 md:py-12 px-4 font-sans relative">
+                        <div className="fixed inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                        
+                        <div className="container mx-auto max-w-4xl relative z-10 animate-fade-in">
+                            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                            
+                            <div className={`p-8 md:p-16 text-center bg-gradient-to-br ${mainResult.color} text-white relative overflow-hidden`}>
+                                <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/snow.png')] opacity-20"></div>
+                                
+                                <h3 className="text-blue-100 uppercase tracking-widest text-xs md:text-sm font-semibold mb-4 opacity-80">你的灵魂栖息地</h3>
+                                <div className="text-7xl md:text-8xl mb-6 animate-bounce select-none filter drop-shadow-lg">
+                                {mainResult.icon}
+                                </div>
+                                <h1 className="text-4xl md:text-6xl font-bold mb-6">{mainResult.name}</h1>
+                                
+                                <div className="max-w-3xl mx-auto allow-select">
+                                    <p className="text-base md:text-xl font-medium leading-relaxed opacity-95 bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
+                                    {mainResult.desc}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-6 md:p-12 bg-white">
+                                
+                                <div className="mb-8 md:mb-10 p-5 md:p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-4 shadow-sm allow-select">
+                                    <Info className="w-8 h-8 md:w-10 md:h-10 text-amber-500 flex-shrink-0" />
+                                    <p className="text-base md:text-xl font-bold text-amber-800 leading-snug">
+                                        最终分苑结果由旅人伙伴们的分苑意向和魔法不可抗力决定，请参考分苑测试结果提交分苑意向！
+                                    </p>
+                                </div>
+
+                                <h4 className="text-lg md:text-xl font-bold text-slate-800 mb-6 md:mb-8 flex items-center gap-2">
+                                <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                                入苑成分分析表
+                                </h4>
+                                
+                                <div className="space-y-5 md:space-y-6">
+                                {results.map((item) => (
+                                    <div key={item.key} className="relative">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="font-medium text-slate-700 flex items-center gap-2 text-sm md:text-base">
+                                        <span className="text-2xl">{item.icon}</span> 
+                                        {item.name}
+                                        </span>
+                                        <span className="font-bold text-slate-900">{item.percent}%</span>
+                                    </div>
+                                    <div className="w-full h-3 md:h-4 bg-slate-100 rounded-full overflow-hidden">
+                                        <div 
+                                        className={`h-full rounded-full bg-gradient-to-r ${item.color} transition-all duration-1000 ease-out`}
+                                        style={{ width: `${item.percent}%` }}
+                                        ></div>
+                                    </div>
+                                    </div>
+                                ))}
+                                </div>
+
+                                <div className="mt-10 md:mt-12 flex justify-center">
+                                <button 
+                                    onClick={restartQuiz}
+                                    className="px-8 py-3 md:px-10 md:py-4 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center gap-2 text-base md:text-lg cursor-pointer touch-manipulation active:scale-95 transition-transform"
+                                >
+                                    <RefreshCw className="w-5 h-5" />
+                                    再次测试
+                                </button>
+                                </div>
+
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            return null;
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<WinterSortingQuiz />);
+    </script>
+</body>
+</html>
